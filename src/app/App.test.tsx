@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
@@ -51,7 +51,7 @@ const buildProfile = (overrides: Record<string, unknown>) => ({
   role: 'STAFF',
   club_id: 'club-1',
   is_active: true,
-  clubs: { name: 'Club', slug: 'club' },
+  clubs: { name: 'Club', slug: 'club', logo_url: 'https://example.com/logo.png' },
   user_access_scopes: [],
   ...overrides,
 })
@@ -118,4 +118,48 @@ it('프로모터는 접근 기간 외 로그인 차단한다', async () => {
   expect(supabaseMocks.mockSignOut).toHaveBeenCalled()
 
   expect(toastMocks.toastError).toHaveBeenCalledWith('접근 기간이 아닙니다.')
+})
+
+it('클럽 로고 컬럼이 없으면 기존 필드로 재시도한다', async () => {
+  const missingLogoError = {
+    message: 'column "logo_url" does not exist',
+    details: '',
+  }
+
+  const mockSingleWithError = vi.fn().mockResolvedValue({
+    data: null,
+    error: missingLogoError,
+  })
+  const mockSingleFallback = vi.fn().mockResolvedValue({
+    data: buildProfile({ clubs: { name: 'Club', slug: 'club' } }),
+    error: null,
+  })
+
+  const mockEq = vi.fn(() => ({ single: mockSingleWithError }))
+  const mockEqFallback = vi.fn(() => ({ single: mockSingleFallback }))
+
+  const mockSelect = vi.fn((select: string) => {
+    if (select.includes('logo_url')) {
+      return { eq: mockEq }
+    }
+    return { eq: mockEqFallback }
+  })
+
+  supabaseMocks.mockFrom.mockReturnValue({ select: mockSelect })
+
+  render(<App />)
+
+  await waitFor(() => {
+    expect(mockSelect).toHaveBeenCalledWith(expect.stringContaining('logo_url'))
+  })
+
+  await waitFor(() => {
+    expect(mockSelect).toHaveBeenCalledWith(expect.not.stringContaining('logo_url'))
+  })
+
+  await waitFor(() => {
+    expect(screen.getByText('Main')).toBeInTheDocument()
+  })
+
+  expect(toastMocks.toastError).not.toHaveBeenCalled()
 })

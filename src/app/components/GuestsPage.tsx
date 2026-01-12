@@ -127,6 +127,44 @@ export function GuestsPage({ user }: GuestsPageProps) {
     return matchesDate && matchesSearch && matchesType && matchesCreator;
   });
 
+  const getLocalCreatedCount = () =>
+    guests.filter((guest) => guest.creatorId === user.id && guest.businessDate === businessDate).length;
+
+  const isDailyLimitExceededError = (error: unknown) => {
+    const message = typeof (error as { message?: unknown })?.message === 'string'
+      ? (error as { message: string }).message
+      : '';
+    return message.includes('daily_guest_limit_exceeded');
+  };
+
+  const isCreatedByMismatchError = (error: unknown) => {
+    const message = typeof (error as { message?: unknown })?.message === 'string'
+      ? (error as { message: string }).message
+      : '';
+    return message.includes('created_by_mismatch');
+  };
+
+  const fetchCreatedCount = async () => {
+    const localCount = getLocalCreatedCount();
+    if (user.role === 'ADMIN' || user.dailyGuestLimit === null) {
+      return localCount;
+    }
+
+    const { count, error } = await supabase
+      .from(GUESTS_TABLE)
+      .select('id', { count: 'exact', head: true })
+      .eq('club_id', user.clubId)
+      .eq('business_date', businessDate)
+      .eq('created_by', user.id);
+
+    if (error) {
+      console.error('Error counting guests:', error);
+      throw new Error('daily_limit_check_failed');
+    }
+
+    return count ?? localCount;
+  };
+
   const handleAddGuest = async () => {
     if (!formName.trim()) {
       toast.error('이름을 입력해주세요');
@@ -134,6 +172,21 @@ export function GuestsPage({ user }: GuestsPageProps) {
     }
 
     try {
+      if (user.role !== 'ADMIN' && user.dailyGuestLimit !== null) {
+        let currentCount = 0;
+        try {
+          currentCount = await fetchCreatedCount();
+        } catch {
+          toast.error('등록 가능 인원을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
+
+        if (currentCount >= user.dailyGuestLimit) {
+          toast.error(`하루 등록 가능 인원(${user.dailyGuestLimit}명)을 초과할 수 없습니다.`);
+          return;
+        }
+      }
+
       const guestType = formIsPaid ? 'PAID' : 'FREE';
       const payload = {
         guest_name: formName.trim(),
@@ -159,6 +212,17 @@ export function GuestsPage({ user }: GuestsPageProps) {
       toast.success('게스트가 등록되었습니다');
     } catch (error) {
       console.error('Add guest error:', error);
+      if (isDailyLimitExceededError(error)) {
+        const limitLabel = user.dailyGuestLimit === null
+          ? '하루 등록 가능 인원을 초과할 수 없습니다.'
+          : `하루 등록 가능 인원(${user.dailyGuestLimit}명)을 초과할 수 없습니다.`;
+        toast.error(limitLabel);
+        return;
+      }
+      if (isCreatedByMismatchError(error)) {
+        toast.error('등록자 정보가 올바르지 않습니다.');
+        return;
+      }
       toast.error('게스트 등록에 실패했습니다');
       return;
     }

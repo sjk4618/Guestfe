@@ -52,6 +52,7 @@ interface StaffMember {
   isActive: boolean;
   startDate?: string;
   endDate?: string;
+  dailyGuestLimit?: number | null;
   createdAt: string;
 }
 
@@ -74,6 +75,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
   const [formRole, setFormRole] = useState<UserRole>("STAFF");
   const [formStartDate, setFormStartDate] = useState<Date>();
   const [formEndDate, setFormEndDate] = useState<Date>();
+  const [formDailyGuestLimit, setFormDailyGuestLimit] = useState("");
 
   const resetForm = () => {
     setFormUsername("");
@@ -82,11 +84,22 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
     setFormRole("STAFF");
     setFormStartDate(undefined);
     setFormEndDate(undefined);
+    setFormDailyGuestLimit("");
     setShowPassword(false);
   };
 
   const validateUsername = (value: string) => {
     return /^[a-zA-Z0-9]+$/.test(value);
+  };
+
+  const parseDailyGuestLimit = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+      return undefined;
+    }
+    return parsed;
   };
 
   const getAccessToken = async () => {
@@ -136,16 +149,35 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
       if (error) throw error;
 
       if (data) {
-        const mappedStaff: StaffMember[] = data.map((profile: any) => ({
-          id: profile.user_id,
-          username: profile.username,
-          displayName: profile.display_name || profile.username,
-          role: profile.role as UserRole,
-          isActive: profile.is_active,
-          createdAt: profile.created_at,
-          startDate: profile.user_access_scopes?.[0]?.start_date,
-          endDate: profile.user_access_scopes?.[0]?.end_date,
-        }));
+        const mappedStaff: StaffMember[] = data.map((profile: any) => {
+          const rawDailyLimit = profile.daily_guest_limit as
+            | number
+            | string
+            | null
+            | undefined;
+          const parsedDailyLimit =
+            typeof rawDailyLimit === "number"
+              ? rawDailyLimit
+              : typeof rawDailyLimit === "string"
+                ? Number(rawDailyLimit)
+                : null;
+          const dailyGuestLimit =
+            Number.isFinite(parsedDailyLimit) && parsedDailyLimit >= 0
+              ? Math.trunc(parsedDailyLimit)
+              : null;
+
+          return {
+            id: profile.user_id,
+            username: profile.username,
+            displayName: profile.display_name || profile.username,
+            role: profile.role as UserRole,
+            isActive: profile.is_active,
+            createdAt: profile.created_at,
+            startDate: profile.user_access_scopes?.[0]?.start_date,
+            endDate: profile.user_access_scopes?.[0]?.end_date,
+            dailyGuestLimit,
+          };
+        });
         setStaff(mappedStaff);
       }
     } catch (error) {
@@ -176,6 +208,12 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
       return;
     }
 
+    const dailyGuestLimit = parseDailyGuestLimit(formDailyGuestLimit);
+    if (dailyGuestLimit === undefined) {
+      toast.error("하루 등록 가능 인원은 0 이상의 정수로 입력해주세요");
+      return;
+    }
+
     try {
       const accessToken = await getAccessToken();
       const { data, error } = await supabase.functions.invoke("create-user", {
@@ -192,6 +230,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
             ? format(formStartDate, "yyyy-MM-dd")
             : undefined,
           endDate: formEndDate ? format(formEndDate, "yyyy-MM-dd") : undefined,
+          dailyGuestLimit,
         },
       });
 
@@ -219,6 +258,12 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
       return;
     }
 
+    const dailyGuestLimit = parseDailyGuestLimit(formDailyGuestLimit);
+    if (dailyGuestLimit === undefined) {
+      toast.error("하루 등록 가능 인원은 0 이상의 정수로 입력해주세요");
+      return;
+    }
+
     try {
       const accessToken = await getAccessToken();
       const { data, error } = await supabase.functions.invoke("update-user", {
@@ -234,6 +279,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
             ? format(formStartDate, "yyyy-MM-dd")
             : undefined,
           endDate: formEndDate ? format(formEndDate, "yyyy-MM-dd") : undefined,
+          dailyGuestLimit,
         },
       });
 
@@ -309,6 +355,11 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
     setFormPassword(""); // Reset password field for editing
     setFormStartDate(member.startDate ? new Date(member.startDate) : undefined);
     setFormEndDate(member.endDate ? new Date(member.endDate) : undefined);
+    setFormDailyGuestLimit(
+      member.dailyGuestLimit === null || member.dailyGuestLimit === undefined
+        ? ""
+        : String(member.dailyGuestLimit)
+    );
   };
 
   const getRoleBadgeVariant = (role: UserRole) => {
@@ -429,6 +480,22 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="dailyGuestLimit">하루 등록 가능 인원</Label>
+                <Input
+                  id="dailyGuestLimit"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="제한 없음"
+                  value={formDailyGuestLimit}
+                  onChange={(e) => setFormDailyGuestLimit(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  비워두면 제한 없음
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>접근 기간</Label>
                   <Button
@@ -509,6 +576,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                 <TableHead>이름</TableHead>
                 <TableHead>아이디</TableHead>
                 <TableHead>직책</TableHead>
+                <TableHead>하루 등록 한도</TableHead>
                 <TableHead>접근 기간</TableHead>
                 <TableHead>상태</TableHead>
                 <TableHead className="text-right">작업</TableHead>
@@ -525,6 +593,12 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                     <Badge variant={getRoleBadgeVariant(member.role)}>
                       {getRoleLabel(member.role)}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {member.dailyGuestLimit === null ||
+                    member.dailyGuestLimit === undefined
+                      ? "제한 없음"
+                      : `${member.dailyGuestLimit}명`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {member.startDate && member.endDate
@@ -645,6 +719,22 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                   <SelectItem value="EXTERNAL_EVENT">외부행사</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-dailyGuestLimit">하루 등록 가능 인원</Label>
+              <Input
+                id="edit-dailyGuestLimit"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="제한 없음"
+                value={formDailyGuestLimit}
+                onChange={(e) => setFormDailyGuestLimit(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                비워두면 제한 없음
+              </p>
             </div>
 
             <div className="space-y-2">

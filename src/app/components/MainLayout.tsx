@@ -21,6 +21,33 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
 
   const canAccessDoor = user.role === 'ADMIN' || user.role === 'STAFF';
   const canAccessAdmin = user.role === 'ADMIN';
+  const clubInitial = (user.clubName?.trim?.() || '?').charAt(0).toUpperCase();
+  const clubLogoAlt = `${user.clubName} 로고`;
+  const ClubIdentity = () => (
+    <div className="flex flex-col">
+      <div className="w-full overflow-hidden rounded-lg bg-accent p-2">
+        {user.clubImageUrl ? (
+          <img
+            src={user.clubImageUrl}
+            alt={clubLogoAlt}
+            className="h-24 w-full object-fill"
+            data-slot="club-logo"
+          />
+        ) : (
+          <div className="h-24 w-full flex items-center justify-center text-2xl text-muted-foreground">
+            {clubInitial}
+          </div>
+        )}
+      </div>
+      <div className="mt-3 flex flex-col gap-2">
+        <h1 className="text-xl font-semibold text-foreground leading-tight">{user.clubName}</h1>
+        <div className="flex flex-col">
+          <p className="text-base text-foreground">{user.displayName}</p>
+          <p className="text-sm text-muted-foreground">{user.role}</p>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderPage = () => {
     switch (currentPage) {
@@ -61,10 +88,7 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-border/50 bg-card backdrop-blur-sm sticky top-0 z-40">
-        <div>
-          <h1 className="font-semibold text-foreground">{user.clubName}</h1>
-          <p className="text-xs text-muted-foreground">{user.displayName}</p>
-        </div>
+        <ClubIdentity />
         <Button
           variant="ghost"
           size="icon"
@@ -168,9 +192,7 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
         {/* Desktop Sidebar */}
         <aside className="hidden lg:flex flex-col border-r border-border bg-card">
           <div className="p-6 border-b border-border">
-            <h1 className="text-xl font-semibold mb-1">{user.clubName}</h1>
-            <p className="text-sm text-muted-foreground">{user.displayName}</p>
-            
+            <ClubIdentity />
           </div>
 
           <nav className="flex-1 p-4 space-y-1">

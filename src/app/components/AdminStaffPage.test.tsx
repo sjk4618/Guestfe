@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AdminStaffPage } from './AdminStaffPage'
 
@@ -40,8 +40,10 @@ const buildUser = () => ({
   clubId: 'club-1',
   clubName: 'Club',
   clubSlug: 'club',
+  clubImageUrl: null,
   cutoffHour: 0,
   cutoffMinute: 0,
+  dailyGuestLimit: null,
   isActive: true,
 })
 
@@ -57,6 +59,7 @@ const createBuilder = (result: unknown) => {
 
 describe('AdminStaffPage', () => {
   afterEach(() => {
+    cleanup()
     supabaseMocks.mockFrom.mockReset()
     supabaseMocks.mockGetSession.mockReset()
     supabaseMocks.mockInvoke.mockReset()
@@ -90,6 +93,9 @@ describe('AdminStaffPage', () => {
     fireEvent.change(screen.getByLabelText('이름 *'), {
       target: { value: '스태프' },
     })
+    fireEvent.change(screen.getByLabelText('하루 등록 가능 인원'), {
+      target: { value: '5' },
+    })
 
     fireEvent.click(screen.getByRole('button', { name: '생성' }))
 
@@ -101,10 +107,50 @@ describe('AdminStaffPage', () => {
             username: 'staff1',
             displayName: '스태프',
             clubId: 'club-1',
+            dailyGuestLimit: 5,
           }),
         }),
       )
     })
+  })
+
+  it('하루 등록 가능 인원이 음수면 생성 요청을 막는다', async () => {
+    const fetchResult = { data: [], error: null }
+    const builder = createBuilder(fetchResult)
+    const select = vi.fn(() => builder)
+
+    supabaseMocks.mockFrom.mockImplementation(() => ({
+      select,
+    }))
+    supabaseMocks.mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'token' } },
+      error: null,
+    })
+
+    render(<AdminStaffPage user={buildUser()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '계정 생성' }))
+    fireEvent.change(screen.getByLabelText('아이디 *'), {
+      target: { value: 'staff1' },
+    })
+    fireEvent.change(screen.getByLabelText('임시 비밀번호 *'), {
+      target: { value: 'password123' },
+    })
+    fireEvent.change(screen.getByLabelText('이름 *'), {
+      target: { value: '스태프' },
+    })
+    fireEvent.change(screen.getByLabelText('하루 등록 가능 인원'), {
+      target: { value: '-1' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '생성' }))
+
+    await waitFor(() => {
+      expect(toastMocks.toastError).toHaveBeenCalledWith(
+        '하루 등록 가능 인원은 0 이상의 정수로 입력해주세요',
+      )
+    })
+    expect(supabaseMocks.mockInvoke).not.toHaveBeenCalled()
   })
 
   it('상태 토글 시 profiles 업데이트를 호출한다', async () => {

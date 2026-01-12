@@ -7,6 +7,7 @@ import { cn } from "./utils";
 
 function Avatar({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Root>) {
   return (
@@ -17,7 +18,9 @@ function Avatar({
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+    </AvatarPrimitive.Root>
   );
 }
 

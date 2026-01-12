@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AdminDashboard } from './AdminDashboard'
 
@@ -26,8 +26,10 @@ const buildUser = () => ({
   clubId: 'club-1',
   clubName: 'Club',
   clubSlug: 'club',
+  clubImageUrl: 'https://example.com/logo.png',
   cutoffHour: 0,
   cutoffMinute: 0,
+  dailyGuestLimit: null,
   isActive: true,
 })
 
@@ -89,5 +91,48 @@ describe('AdminDashboard', () => {
 
     expect(within(totalCard).getByText('2')).toBeInTheDocument()
     expect(within(checkedCard).getByText('1')).toBeInTheDocument()
+  })
+
+  it('CSV 다운로드 버튼이 요약 파일을 생성한다', async () => {
+    const fetchResult = {
+      data: [
+        {
+          id: 'guest-1',
+          status: 'REGISTERED',
+          guest_type: 'FREE',
+          business_date: '2025-01-05',
+          checked_in_at: null,
+          created_by: 'user-1',
+          created_by_profile: { display_name: '스태프' },
+        },
+      ],
+      error: null,
+    }
+
+    const builder = createBuilder(fetchResult)
+    const select = vi.fn(() => builder)
+    supabaseMocks.mockFrom.mockImplementation(() => ({
+      select,
+    }))
+
+    const createObjectUrl = vi.fn(() => 'blob:mock')
+    const revokeObjectUrl = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { value: createObjectUrl })
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectUrl })
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    render(<AdminDashboard user={buildUser()} />)
+
+    await waitFor(() => {
+      expect(select).toHaveBeenCalled()
+    })
+
+    const buttons = screen.getAllByRole('button', { name: 'CSV 다운로드' })
+    fireEvent.click(buttons[0])
+
+    expect(createObjectUrl).toHaveBeenCalled()
+    expect(revokeObjectUrl).toHaveBeenCalled()
+    expect(clickSpy).toHaveBeenCalled()
+    clickSpy.mockRestore()
   })
 })

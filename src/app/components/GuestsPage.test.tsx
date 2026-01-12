@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { format } from 'date-fns'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GuestsPage } from './GuestsPage'
@@ -33,8 +33,10 @@ const buildUser = () => ({
   clubId: 'club-1',
   clubName: 'Club',
   clubSlug: 'club',
+  clubImageUrl: null,
   cutoffHour: 0,
   cutoffMinute: 0,
+  dailyGuestLimit: null,
   isActive: true,
 })
 
@@ -50,6 +52,7 @@ const createBuilder = (result: unknown) => {
 
 describe('GuestsPage', () => {
   afterEach(() => {
+    cleanup()
     supabaseMocks.mockFrom.mockReset()
     toastMocks.toastError.mockReset()
     toastMocks.toastSuccess.mockReset()
@@ -109,5 +112,97 @@ describe('GuestsPage', () => {
       }),
     )
     expect(toastMocks.toastSuccess).toHaveBeenCalledWith('게스트가 등록되었습니다')
+  })
+
+  it('일일 한도에 도달하면 추가를 막는다', async () => {
+    const businessDate = format(new Date(), 'yyyy-MM-dd')
+    const fetchResult = {
+      data: [
+        {
+          id: 'guest-1',
+          guest_name: '김민수',
+          phone: null,
+          status: 'REGISTERED',
+          created_by: 'user-1',
+          created_by_profile: {
+            display_name: '스태프',
+            username: 'staffer',
+          },
+          business_date: businessDate,
+        },
+      ],
+      error: null,
+    }
+    const countResult = { count: 1, error: null, data: null }
+
+    const fetchBuilder = createBuilder(fetchResult)
+    const countBuilder = createBuilder(countResult)
+    const select = vi.fn((_: unknown, options?: { head?: boolean }) =>
+      options?.head ? countBuilder : fetchBuilder,
+    )
+    const insert = vi.fn()
+
+    supabaseMocks.mockFrom.mockImplementation(() => ({
+      select,
+      insert,
+    }))
+
+    render(<GuestsPage user={{ ...buildUser(), dailyGuestLimit: 1 }} />)
+
+    await waitFor(() => {
+      expect(select).toHaveBeenCalled()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '게스트 추가' }))
+    fireEvent.change(screen.getByLabelText('이름 *'), { target: { value: '새 게스트' } })
+    fireEvent.click(screen.getByRole('button', { name: '등록' }))
+
+    await waitFor(() => {
+      expect(toastMocks.toastError).toHaveBeenCalledWith(
+        '하루 등록 가능 인원(1명)을 초과할 수 없습니다.',
+      )
+    })
+    expect(insert).not.toHaveBeenCalled()
+  })
+
+  it('서버에서 한도 초과 오류가 오면 안내 메시지를 표시한다', async () => {
+    const businessDate = format(new Date(), 'yyyy-MM-dd')
+    const fetchResult = { data: [], error: null }
+    const countResult = { count: 1, error: null, data: null }
+    const insertResult = {
+      data: null,
+      error: { message: 'daily_guest_limit_exceeded', code: 'P0001' },
+    }
+
+    const fetchBuilder = createBuilder(fetchResult)
+    const countBuilder = createBuilder(countResult)
+    const select = vi.fn((_: unknown, options?: { head?: boolean }) =>
+      options?.head ? countBuilder : fetchBuilder,
+    )
+    const selectSingle = vi.fn().mockResolvedValue(insertResult)
+    const selectAfterInsert = vi.fn(() => ({ single: selectSingle }))
+    const insert = vi.fn(() => ({ select: selectAfterInsert }))
+
+    supabaseMocks.mockFrom.mockImplementation(() => ({
+      select,
+      insert,
+    }))
+
+    render(<GuestsPage user={{ ...buildUser(), dailyGuestLimit: 2 }} />)
+
+    await waitFor(() => {
+      expect(select).toHaveBeenCalled()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '게스트 추가' }))
+    fireEvent.change(screen.getByLabelText('이름 *'), { target: { value: '새 게스트' } })
+    fireEvent.click(screen.getByRole('button', { name: '등록' }))
+
+    await waitFor(() => {
+      expect(toastMocks.toastError).toHaveBeenCalledWith(
+        '하루 등록 가능 인원(2명)을 초과할 수 없습니다.',
+      )
+    })
+    expect(insert).toHaveBeenCalled()
   })
 })

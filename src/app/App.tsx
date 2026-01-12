@@ -19,8 +19,10 @@ export interface User {
   clubId: string;
   clubName: string;
   clubSlug: string;
+  clubImageUrl: string | null;
   cutoffHour: number;
   cutoffMinute: number;
+  dailyGuestLimit: number | null;
   isActive: boolean;
   startDate?: string;
   endDate?: string;
@@ -53,24 +55,58 @@ function App() {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          clubs (
-            name,
-            slug,
-            cutoff_time
-          ),
-          user_access_scopes (
-            start_date,
-            end_date
-          )
-        `)
-        .eq('user_id', userId)
-        .single();
+      const PROFILE_SELECT_WITH_LOGO = `
+        *,
+        clubs (
+          name,
+          slug,
+          cutoff_time,
+          logo_url
+        ),
+        user_access_scopes (
+          start_date,
+          end_date
+        )
+      `;
+
+      const PROFILE_SELECT = `
+        *,
+        clubs (
+          name,
+          slug,
+          cutoff_time
+        ),
+        user_access_scopes (
+          start_date,
+          end_date
+        )
+      `;
+
+      const loadProfile = (select: string) =>
+        supabase
+          .from('profiles')
+          .select(select)
+          .eq('user_id', userId)
+          .single();
+
+      let { data: profile, error: profileError } = await loadProfile(PROFILE_SELECT_WITH_LOGO);
+
+      if (profileError) {
+        const missingLogoColumn =
+          profileError.message?.includes('logo') || profileError.details?.includes('logo');
+
+        if (missingLogoColumn) {
+          console.warn('클럽 로고 필드가 없어 기본 이미지 없이 로드합니다.');
+          const fallback = await loadProfile(PROFILE_SELECT);
+          profile = fallback.data;
+          profileError = fallback.error;
+        }
+      }
 
       if (profileError) throw profileError;
+      if (!profile) {
+        throw new Error('프로필 정보를 불러올 수 없습니다.');
+      }
 
       if (profile) {
         const accessStart = profile.user_access_scopes?.[0]?.start_date as string | undefined;
@@ -95,7 +131,14 @@ function App() {
           return;
         }
 
-        const cutoffTime = profile.clubs?.cutoff_time as string | null | undefined;
+        const clubs = profile.clubs as {
+          name?: string;
+          slug?: string;
+          cutoff_time?: string | null;
+          logo_url?: string | null;
+        } | null;
+
+        const cutoffTime = clubs?.cutoff_time as string | null | undefined;
         const [cutoffHourText, cutoffMinuteText] = cutoffTime
           ? cutoffTime.split(':')
           : [];
@@ -107,6 +150,21 @@ function App() {
         const cutoffMinute = Number.isFinite(cutoffMinuteValue)
           ? cutoffMinuteValue
           : DEFAULT_CUTOFF_MINUTE;
+        const clubImageUrl =
+          typeof clubs?.logo_url === 'string' && clubs.logo_url.trim().length > 0
+            ? clubs.logo_url
+            : null;
+        const rawDailyLimit = profile.daily_guest_limit as number | string | null | undefined;
+        const parsedDailyLimit =
+          typeof rawDailyLimit === 'number'
+            ? rawDailyLimit
+            : typeof rawDailyLimit === 'string'
+              ? Number(rawDailyLimit)
+              : null;
+        const dailyGuestLimit =
+          Number.isFinite(parsedDailyLimit) && parsedDailyLimit >= 0
+            ? Math.trunc(parsedDailyLimit)
+            : null;
 
         const nextUser: User = {
           id: profile.user_id,
@@ -114,10 +172,12 @@ function App() {
           displayName: profile.display_name || profile.username,
           role: profile.role as UserRole,
           clubId: profile.club_id,
-          clubName: profile.clubs?.name || 'Unknown Club',
-          clubSlug: profile.clubs?.slug || 'unknown',
+          clubName: clubs?.name || 'Unknown Club',
+          clubSlug: clubs?.slug || 'unknown',
+          clubImageUrl,
           cutoffHour,
           cutoffMinute,
+          dailyGuestLimit,
           isActive: profile.is_active,
           startDate: accessStart,
           endDate: accessEnd

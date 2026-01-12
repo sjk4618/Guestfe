@@ -165,12 +165,62 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
       .sort((a, b) => b.registered - a.registered);
   }, [entries]);
 
+  const escapeCsvValue = (value: string | number | null | undefined) => {
+    if (value === null || value === undefined) return '';
+    const text = String(value);
+    if (/[",\n]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  };
+
+  const downloadCsv = () => {
+    const fromLabel = format(dateFrom, 'yyyy-MM-dd');
+    const toLabel = format(dateTo, 'yyyy-MM-dd');
+    const rows: string[][] = [];
+
+    rows.push(['클럽', user.clubName]);
+    rows.push(['기간', `${fromLabel} ~ ${toLabel}`]);
+    rows.push(['생성 시각', format(new Date(), 'yyyy-MM-dd HH:mm:ss')]);
+    rows.push([]);
+    rows.push(['요약', '값']);
+    rows.push(['총 등록', kpiData.totalRegistered]);
+    rows.push(['총 입장', kpiData.totalCheckedIn]);
+    rows.push(['입장률(%)', kpiData.checkInRate]);
+    rows.push(['무료 게스트', kpiData.freeGuests]);
+    rows.push(['유료 게스트', kpiData.paidGuests]);
+    rows.push([]);
+    rows.push(['생성자별 통계', '', '', '']);
+    rows.push(['이름', '등록', '입장', '입장률(%)']);
+    creatorData.forEach((creator) => {
+      rows.push([creator.name, creator.registered, creator.checkedIn, creator.rate]);
+    });
+
+    const csv = rows
+      .map((row) => row.map((cell) => escapeCsvValue(cell)).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${user.clubName}_${fromLabel}_${toLabel}_dashboard.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl mb-2">대시보드</h1>
-        <p className="text-muted-foreground">게스트 통계와 분석을 확인하세요</p>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl mb-2">대시보드</h1>
+          <p className="text-muted-foreground">게스트 통계와 분석을 확인하세요</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={downloadCsv}>
+          CSV 다운로드
+        </Button>
       </div>
 
       {/* Date Range Selector */}
