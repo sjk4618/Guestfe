@@ -45,6 +45,7 @@ import {
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { toast } from "sonner";
+import { getDayChar, formatDateWithDayShort } from "@/lib/date-utils";
 
 interface StaffMember {
   id: string;
@@ -546,7 +547,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                         <Button variant="outline" className="flex-1">
                           <CalendarIcon className="w-4 h-4 mr-2" />
                           {formStartDate
-                            ? format(formStartDate, "PP", { locale: ko })
+                            ? `${format(formStartDate, "PP", { locale: ko })}(${getDayChar(formStartDate)})`
                             : "시작일"}
                         </Button>
                       </PopoverTrigger>
@@ -565,7 +566,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                         <Button variant="outline" className="flex-1">
                           <CalendarIcon className="w-4 h-4 mr-2" />
                           {formEndDate
-                            ? format(formEndDate, "PP", { locale: ko })
+                            ? `${format(formEndDate, "PP", { locale: ko })}(${getDayChar(formEndDate)})`
                             : "종료일"}
                         </Button>
                       </PopoverTrigger>
@@ -680,10 +681,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {member.startDate && member.endDate
-                      ? `${format(
-                        new Date(member.startDate),
-                        "yy.MM.dd"
-                      )} ~ ${format(new Date(member.endDate), "yy.MM.dd")}`
+                      ? `${formatDateWithDayShort(new Date(member.startDate))} ~ ${formatDateWithDayShort(new Date(member.endDate))}`
                       : "∞"}
                   </TableCell>
                   <TableCell>
@@ -836,7 +834,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                     <Button variant="outline" className="flex-1">
                       <CalendarIcon className="w-4 h-4 mr-2" />
                       {formStartDate
-                        ? format(formStartDate, "PP", { locale: ko })
+                        ? `${format(formStartDate, "PP", { locale: ko })}(${getDayChar(formStartDate)})`
                         : "시작일"}
                     </Button>
                   </PopoverTrigger>
@@ -855,7 +853,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                     <Button variant="outline" className="flex-1">
                       <CalendarIcon className="w-4 h-4 mr-2" />
                       {formEndDate
-                        ? format(formEndDate, "PP", { locale: ko })
+                        ? `${format(formEndDate, "PP", { locale: ko })}(${getDayChar(formEndDate)})`
                         : "종료일"}
                     </Button>
                   </PopoverTrigger>

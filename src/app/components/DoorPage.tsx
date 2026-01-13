@@ -25,6 +25,7 @@ import {
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { toast } from "sonner";
+import { getDayChar } from "@/lib/date-utils";
 import {
   DEFAULT_CUTOFF_HOUR,
   DEFAULT_CUTOFF_MINUTE,
@@ -155,7 +156,17 @@ export function DoorPage({ user }: DoorPageProps) {
         })
         .eq("id", cancelGuest.id)
         .eq("club_id", user.clubId)
-        .select()
+        .select(`
+          *,
+          created_by_profile:profiles!guest_entries_created_by_fkey (
+            display_name,
+            username
+          ),
+          checked_in_by_profile:profiles!guest_entries_checked_in_by_fkey (
+            display_name,
+            username
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -191,7 +202,17 @@ export function DoorPage({ user }: DoorPageProps) {
         })
         .eq("id", confirmGuest.id)
         .eq("club_id", user.clubId)
-        .select()
+        .select(`
+          *,
+          created_by_profile:profiles!guest_entries_created_by_fkey (
+            display_name,
+            username
+          ),
+          checked_in_by_profile:profiles!guest_entries_checked_in_by_fkey (
+            display_name,
+            username
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -268,7 +289,7 @@ export function DoorPage({ user }: DoorPageProps) {
               <PopoverTrigger asChild>
                 <Button variant="outline" className="min-w-[200px]">
                   <CalendarIcon className="w-4 h-4 mr-2" />
-                  {format(selectedDate, "PPP", { locale: ko })}
+                  {format(selectedDate, "PPP", { locale: ko })}({getDayChar(selectedDate)})
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">

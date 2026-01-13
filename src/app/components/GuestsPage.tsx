@@ -14,6 +14,7 @@ import { ChevronLeft, ChevronRight, Plus, Search, Edit, Trash2, Calendar as Cale
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { getDayChar } from '@/lib/date-utils';
 import {
   DEFAULT_CUTOFF_HOUR,
   DEFAULT_CUTOFF_MINUTE,
@@ -319,7 +320,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
               <PopoverTrigger asChild>
                 <Button variant="outline" className="min-w-[200px]">
                   <CalendarIcon className="w-4 h-4 mr-2" />
-                  {format(selectedDate, 'PPP', { locale: ko })}
+                  {format(selectedDate, 'PPP', { locale: ko })}({getDayChar(selectedDate)})
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
