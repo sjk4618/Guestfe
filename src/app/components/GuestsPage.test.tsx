@@ -205,4 +205,103 @@ describe('GuestsPage', () => {
     })
     expect(insert).toHaveBeenCalled()
   })
+
+  it('삭제 후에는 한도 아래로 내려가 다시 추가할 수 있다', async () => {
+    const businessDate = format(new Date(), 'yyyy-MM-dd')
+    const fetchResult = {
+      data: [
+        {
+          id: 'guest-1',
+          guest_name: '김민수',
+          phone: null,
+          status: 'REGISTERED',
+          created_by: 'user-1',
+          created_by_profile: {
+            display_name: '스태프',
+            username: 'staffer',
+          },
+          business_date: businessDate,
+        },
+      ],
+      error: null,
+    }
+    const countResult = { count: 1, error: null, data: null }
+    const insertResult = {
+      data: {
+        id: 'guest-2',
+        guest_name: '새 게스트',
+        phone: null,
+        status: 'REGISTERED',
+        created_by: 'user-1',
+        created_by_profile: {
+          display_name: '스태프',
+          username: 'staffer',
+        },
+        business_date: businessDate,
+      },
+      error: null,
+    }
+
+    const countAfterDeleteResult = { count: 0, error: null, data: null }
+
+    const fetchBuilder = createBuilder(fetchResult)
+    const countBuilder = createBuilder(countResult)
+    const countAfterDeleteBuilder = createBuilder(countAfterDeleteResult)
+    let deleted = false
+    const select = vi.fn((_: unknown, options?: { head?: boolean }) => {
+      if (!options?.head) return fetchBuilder
+      return deleted ? countAfterDeleteBuilder : countBuilder
+    })
+
+    const deleteBuilder: any = {
+      eq: vi.fn(() => deleteBuilder),
+      then: (resolve: (value: unknown) => void, reject: (reason?: any) => void) =>
+        Promise.resolve({ data: null, error: null }).then(resolve, reject),
+    }
+    const deleteFn = vi.fn(() => deleteBuilder)
+
+    const selectSingle = vi.fn().mockResolvedValue(insertResult)
+    const selectAfterInsert = vi.fn(() => ({ single: selectSingle }))
+    const insert = vi.fn(() => ({ select: selectAfterInsert }))
+
+    supabaseMocks.mockFrom.mockImplementation(() => ({
+      select,
+      insert,
+      delete: deleteFn,
+    }))
+
+    render(<GuestsPage user={{ ...buildUser(), dailyGuestLimit: 1 }} />)
+
+    await waitFor(() => {
+      expect(select).toHaveBeenCalled()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '게스트 추가' }))
+    fireEvent.change(screen.getByLabelText('이름 *'), { target: { value: '새 게스트' } })
+    fireEvent.click(screen.getByRole('button', { name: '등록' }))
+
+    await waitFor(() => {
+      expect(toastMocks.toastError).toHaveBeenCalledWith(
+        '하루 등록 가능 인원(1명)을 초과할 수 없습니다.',
+      )
+    })
+    expect(insert).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: '취소' }))
+
+    fireEvent.click(screen.getByRole('button', { name: '게스트 삭제' }))
+
+    await waitFor(() => {
+      expect(deleteFn).toHaveBeenCalled()
+    })
+    deleted = true
+
+    fireEvent.click(screen.getByRole('button', { name: '게스트 추가' }))
+    fireEvent.change(screen.getByLabelText('이름 *'), { target: { value: '새 게스트' } })
+    fireEvent.click(screen.getByRole('button', { name: '등록' }))
+
+    await waitFor(() => {
+      expect(insert).toHaveBeenCalled()
+    })
+  })
 })

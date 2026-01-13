@@ -127,9 +127,6 @@ export function GuestsPage({ user }: GuestsPageProps) {
     return matchesDate && matchesSearch && matchesType && matchesCreator;
   });
 
-  const getLocalCreatedCount = () =>
-    guests.filter((guest) => guest.creatorId === user.id && guest.businessDate === businessDate).length;
-
   const isDailyLimitExceededError = (error: unknown) => {
     const message = typeof (error as { message?: unknown })?.message === 'string'
       ? (error as { message: string }).message
@@ -145,11 +142,6 @@ export function GuestsPage({ user }: GuestsPageProps) {
   };
 
   const fetchCreatedCount = async () => {
-    const localCount = getLocalCreatedCount();
-    if (user.role === 'ADMIN' || user.dailyGuestLimit === null) {
-      return localCount;
-    }
-
     const { count, error } = await supabase
       .from(GUESTS_TABLE)
       .select('id', { count: 'exact', head: true })
@@ -157,12 +149,12 @@ export function GuestsPage({ user }: GuestsPageProps) {
       .eq('business_date', businessDate)
       .eq('created_by', user.id);
 
-    if (error) {
+    if (error || typeof count !== 'number') {
       console.error('Error counting guests:', error);
       throw new Error('daily_limit_check_failed');
     }
 
-    return count ?? localCount;
+    return count;
   };
 
   const handleAddGuest = async () => {
@@ -475,6 +467,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
                       <Button
                         variant="outline"
                         size="sm"
+                        aria-label="게스트 수정"
                         onClick={() => openEditDialog(guest)}
                       >
                         <Edit className="w-4 h-4" />
@@ -482,6 +475,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
                       <Button
                         variant="outline"
                         size="sm"
+                        aria-label="게스트 삭제"
                         onClick={() => handleDeleteGuest(guest.id)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
