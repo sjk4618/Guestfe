@@ -596,17 +596,17 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {member.dailyGuestLimit === null ||
-                    member.dailyGuestLimit === undefined
+                      member.dailyGuestLimit === undefined
                       ? "제한 없음"
                       : `${member.dailyGuestLimit}명`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {member.startDate && member.endDate
                       ? `${format(
-                          new Date(member.startDate),
-                          "yy.MM.dd"
-                        )} ~ ${format(new Date(member.endDate), "yy.MM.dd")}`
-                      : "-"}
+                        new Date(member.startDate),
+                        "yy.MM.dd"
+                      )} ~ ${format(new Date(member.endDate), "yy.MM.dd")}`
+                      : "∞"}
                   </TableCell>
                   <TableCell>
                     <Switch

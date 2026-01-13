@@ -20,6 +20,7 @@ import {
   Search,
   Calendar as CalendarIcon,
   CheckCircle2,
+  Undo2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -60,6 +61,7 @@ export function DoorPage({ user }: DoorPageProps) {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmGuest, setConfirmGuest] = useState<Guest | null>(null);
+  const [cancelGuest, setCancelGuest] = useState<Guest | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -136,6 +138,45 @@ export function DoorPage({ user }: DoorPageProps) {
     setConfirmGuest(guest);
   };
 
+  const handleCancelCheckIn = (guest: Guest) => {
+    setCancelGuest(guest);
+  };
+
+  const confirmCancelCheckIn = async () => {
+    if (!cancelGuest) return;
+
+    try {
+      const { data, error } = await supabase
+        .from(GUESTS_TABLE)
+        .update({
+          status: "REGISTERED",
+          checked_in_at: null,
+          checked_in_by: null,
+        })
+        .eq("id", cancelGuest.id)
+        .eq("club_id", user.clubId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setGuests(
+          guests.map((g) =>
+            g.id === cancelGuest.id ? mapGuestFromDb(data) : g
+          )
+        );
+      }
+
+      toast.success(`${cancelGuest.name}님 입장이 취소되었습니다`);
+    } catch (error) {
+      console.error("Cancel check-in error:", error);
+      toast.error("입장 취소에 실패했습니다");
+    } finally {
+      setCancelGuest(null);
+    }
+  };
+
   const confirmCheckIn = async () => {
     if (!confirmGuest) return;
 
@@ -205,7 +246,7 @@ export function DoorPage({ user }: DoorPageProps) {
           <div className="text-2xl text-green-600">{stats.checkedIn}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground mb-1">대기 중</div>
+          <div className="text-sm text-muted-foreground mb-1">입장 전</div>
           <div className="text-2xl text-orange-600">{stats.pending}</div>
         </Card>
       </div>
@@ -275,11 +316,10 @@ export function DoorPage({ user }: DoorPageProps) {
             return (
               <Card
                 key={guest.id}
-                className={`p-4 transition-colors ${
-                  isCheckedIn
-                    ? "bg-gray-700 border border-gray-200"
-                    : "hover:bg-accent/10"
-                }`}
+                className={`p-4 transition-colors ${isCheckedIn
+                  ? "bg-gray-700 border border-gray-200"
+                  : "hover:bg-accent/10"
+                  }`}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="flex-1">
@@ -345,10 +385,21 @@ export function DoorPage({ user }: DoorPageProps) {
                         입장
                       </Button>
                     ) : (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-md">
-                        <CheckCircle2 className="w-5 h-5" />
-                        <span>입장 완료됨</span>
-                      </div>
+                      <>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-md">
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span>입장 완료됨</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => handleCancelCheckIn(guest)}
+                          className="min-w-[120px] text-destructive border-destructive hover:bg-destructive/10"
+                        >
+                          <Undo2 className="w-5 h-5 mr-2" />
+                          입장 취소
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -395,6 +446,57 @@ export function DoorPage({ user }: DoorPageProps) {
               취소
             </Button>
             <Button onClick={confirmCheckIn}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog
+        open={cancelGuest !== null}
+        onOpenChange={(open) => !open && setCancelGuest(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>입장 취소 확인</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-center text-lg mb-4">
+              <span className="font-semibold">{cancelGuest?.name}</span>님의
+              <br />
+              입장을 취소하시겠습니까?
+            </p>
+            <div className="bg-accent p-4 rounded-md space-y-2 text-sm">
+              {cancelGuest?.phone && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">전화번호</span>
+                  <span>{cancelGuest.phone}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">타입</span>
+                <span>{cancelGuest?.type === "FREE" ? "무료" : "유료"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">입장 시간</span>
+                <span>
+                  {cancelGuest?.checkedInAt
+                    ? format(new Date(cancelGuest.checkedInAt), "HH:mm")
+                    : "-"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">처리자</span>
+                <span>{cancelGuest?.checkedInBy || "-"}</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelGuest(null)}>
+              아니오
+            </Button>
+            <Button variant="destructive" onClick={confirmCancelCheckIn}>
+              입장 취소
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

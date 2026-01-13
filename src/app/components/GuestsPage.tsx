@@ -102,7 +102,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
       const { data, error } = await query;
       if (error) throw error;
 
-        setGuests((data || []).map(mapGuestFromDb));
+      setGuests((data || []).map(mapGuestFromDb));
     } catch (error) {
       console.error('Error fetching guests:', error);
       toast.error('게스트 목록을 불러오지 못했습니다.');
@@ -114,16 +114,16 @@ export function GuestsPage({ user }: GuestsPageProps) {
   useEffect(() => {
     fetchGuests();
   }, [businessDate, user.clubId, user.username, user.role]);
-  
+
   const filteredGuests = guests.filter((guest) => {
     const matchesDate = guest.businessDate === businessDate;
     const matchesSearch = guest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (guest.phone && guest.phone.includes(searchQuery));
     const matchesType = filterType === 'ALL' ? true : guest.type === filterType;
-    
+
     // DJ/PROMOTER/EXTERNAL_EVENT can only see their own guests
     const matchesCreator = canSeeAllGuests ? true : guest.creatorId === user.id;
-    
+
     return matchesDate && matchesSearch && matchesType && matchesCreator;
   });
 
@@ -218,7 +218,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
       toast.error('게스트 등록에 실패했습니다');
       return;
     }
-    
+
     // Reset form
     setFormName('');
     setFormPhone('');
@@ -314,7 +314,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="min-w-[200px]">
@@ -450,7 +450,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
                       {guest.type === 'FREE' ? '무료' : '유료'}
                     </Badge>
                     <Badge variant={guest.status === 'CHECKED_IN' ? 'checked' : 'registered'}>
-                      {guest.status === 'CHECKED_IN' ? '입장완료' : '등록'}
+                      {guest.status === 'CHECKED_IN' ? '입장완료' : '입장 전'}
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">

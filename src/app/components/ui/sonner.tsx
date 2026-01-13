@@ -16,8 +16,18 @@ const Toaster = ({ position = "top-center", ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
+          "--width": "400px",
         } as React.CSSProperties
       }
+      toastOptions={{
+        style: {
+          padding: "16px 20px",
+          fontSize: "16px",
+          minHeight: "60px",
+          backgroundColor: "#f0f0f0",
+          color: "#000000",
+        },
+      }}
       {...props}
     />
   );
