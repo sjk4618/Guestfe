@@ -205,6 +205,11 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
       return;
     }
 
+    if (formPassword.trim().length < 8) {
+      toast.error("비밀번호는 8자 이상이어야 합니다");
+      return;
+    }
+
     if (!validateUsername(formUsername.trim())) {
       toast.error("아이디는 공백/한글/특수문자 없이 영문과 숫자만 가능합니다");
       return;
@@ -259,6 +264,11 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
 
   const handleUpdateStaff = async () => {
     if (!editingStaff || !formDisplayName.trim()) return;
+
+    if (formPassword.trim() && formPassword.trim().length < 8) {
+      toast.error("비밀번호는 8자 이상이어야 합니다");
+      return;
+    }
 
     if ((formStartDate && !formEndDate) || (!formStartDate && formEndDate)) {
       toast.error("접근 기간을 모두 선택하거나 비워주세요");

@@ -16,7 +16,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim() && password.length >= 3) {
+    if (username.trim() && password.length >= 8) {
       onLogin(username, password);
     }
   };
@@ -66,10 +66,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full mt-6"
-              disabled={!username.trim() || password.length < 3}
+              disabled={!username.trim() || password.length < 8}
             >
               로그인
             </Button>
