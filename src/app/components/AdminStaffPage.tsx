@@ -39,6 +39,8 @@ import {
   Calendar as CalendarIcon,
   Eye,
   EyeOff,
+  Filter,
+  ArrowUpDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -63,6 +65,10 @@ interface AdminStaffPageProps {
 export function AdminStaffPage({ user }: AdminStaffPageProps) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter and Sort state
+  const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">("ALL");
+  const [accessDateSort, setAccessDateSort] = useState<"newest" | "oldest" | "none">("none");
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
@@ -388,183 +394,255 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
     }
   };
 
+  // Filtered and sorted staff list
+  const filteredStaff = staff
+    .filter((member) => {
+      if (roleFilter === "ALL") return true;
+      return member.role === roleFilter;
+    })
+    .sort((a, b) => {
+      if (accessDateSort === "none") return 0;
+
+      // Staff without access period goes to the end
+      const aHasDate = a.startDate && a.endDate;
+      const bHasDate = b.startDate && b.endDate;
+
+      if (!aHasDate && !bHasDate) return 0;
+      if (!aHasDate) return 1;
+      if (!bHasDate) return -1;
+
+      const aStart = new Date(a.startDate!).getTime();
+      const bStart = new Date(b.startDate!).getTime();
+
+      return accessDateSort === "newest" ? bStart - aStart : aStart - bStart;
+    });
+
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl mb-2">스탭 관리</h1>
-          <p className="text-muted-foreground">
-            직원 계정을 생성하고 관리하세요
-          </p>
+      <div className="mb-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl mb-2">스탭 관리</h1>
+            <p className="text-muted-foreground">
+              직원 계정을 생성하고 관리하세요
+            </p>
+          </div>
+
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                계정 생성
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>새 스태프 계정 생성</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">아이디 *</Label>
+                  <Input
+                    id="username"
+                    placeholder="영문/숫자"
+                    value={formUsername}
+                    onChange={(e) => setFormUsername(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    아이디는 공백/한글/특수문자 없이 영문과 숫자만 가능합니다
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">임시 비밀번호 *</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="8자 이상"
+                      value={formPassword}
+                      onChange={(e) => setFormPassword(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">이름 *</Label>
+                  <Input
+                    id="displayName"
+                    placeholder="표시될 이름"
+                    value={formDisplayName}
+                    onChange={(e) => setFormDisplayName(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">직책 *</Label>
+                  <Select
+                    value={formRole}
+                    onValueChange={(value) => setFormRole(value as UserRole)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ADMIN">관리자</SelectItem>
+                      <SelectItem value="STAFF">스태프</SelectItem>
+                      <SelectItem value="DJ">DJ</SelectItem>
+                      <SelectItem value="PROMOTER">프로모터</SelectItem>
+                      <SelectItem value="EXTERNAL_EVENT">외부행사</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dailyGuestLimit">하루 등록 가능 인원</Label>
+                  <Input
+                    id="dailyGuestLimit"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="제한 없음"
+                    value={formDailyGuestLimit}
+                    onChange={(e) => setFormDailyGuestLimit(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    비워두면 제한 없음
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>접근 기간</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFormStartDate(undefined);
+                        setFormEndDate(undefined);
+                      }}
+                    >
+                      접근 기간 없음
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="flex-1">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          {formStartDate
+                            ? format(formStartDate, "PP", { locale: ko })
+                            : "시작일"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formStartDate}
+                          onSelect={setFormStartDate}
+                          locale={ko}
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="flex-1">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          {formEndDate
+                            ? format(formEndDate, "PP", { locale: ko })
+                            : "종료일"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formEndDate}
+                          onSelect={setFormEndDate}
+                          locale={ko}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    resetForm();
+                  }}
+                >
+                  취소
+                </Button>
+                <Button onClick={handleCreateStaff}>생성</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              계정 생성
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>새 스태프 계정 생성</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">아이디 *</Label>
-                <Input
-                  id="username"
-                  placeholder="영문/숫자"
-                  value={formUsername}
-                  onChange={(e) => setFormUsername(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  아이디는 공백/한글/특수문자 없이 영문과 숫자만 가능합니다
-                </p>
-              </div>
+        {/* Filter Controls */}
+        <div className="flex flex-wrap gap-3">
+          {/* Role Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select
+              value={roleFilter}
+              onValueChange={(value) => setRoleFilter(value as UserRole | "ALL")}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="직책 필터" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">전체 직책</SelectItem>
+                <SelectItem value="ADMIN">관리자</SelectItem>
+                <SelectItem value="STAFF">스태프</SelectItem>
+                <SelectItem value="DJ">DJ</SelectItem>
+                <SelectItem value="PROMOTER">프로모터</SelectItem>
+                <SelectItem value="EXTERNAL_EVENT">외부행사</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">임시 비밀번호 *</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="8자 이상"
-                    value={formPassword}
-                    onChange={(e) => setFormPassword(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
+          {/* Access Date Sort */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+            <Select
+              value={accessDateSort}
+              onValueChange={(value) => setAccessDateSort(value as "newest" | "oldest" | "none")}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="접근 기간 정렬" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">기본 정렬</SelectItem>
+                <SelectItem value="newest">접근 기간 최신순</SelectItem>
+                <SelectItem value="oldest">접근 기간 오래된순</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="displayName">이름 *</Label>
-                <Input
-                  id="displayName"
-                  placeholder="표시될 이름"
-                  value={formDisplayName}
-                  onChange={(e) => setFormDisplayName(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">직책 *</Label>
-                <Select
-                  value={formRole}
-                  onValueChange={(value) => setFormRole(value as UserRole)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADMIN">관리자</SelectItem>
-                    <SelectItem value="STAFF">스태프</SelectItem>
-                    <SelectItem value="DJ">DJ</SelectItem>
-                    <SelectItem value="PROMOTER">프로모터</SelectItem>
-                    <SelectItem value="EXTERNAL_EVENT">외부행사</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dailyGuestLimit">하루 등록 가능 인원</Label>
-                <Input
-                  id="dailyGuestLimit"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="제한 없음"
-                  value={formDailyGuestLimit}
-                  onChange={(e) => setFormDailyGuestLimit(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  비워두면 제한 없음
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>접근 기간</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setFormStartDate(undefined);
-                      setFormEndDate(undefined);
-                    }}
-                  >
-                    접근 기간 없음
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="flex-1">
-                        <CalendarIcon className="w-4 h-4 mr-2" />
-                        {formStartDate
-                          ? format(formStartDate, "PP", { locale: ko })
-                          : "시작일"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formStartDate}
-                        onSelect={setFormStartDate}
-                        locale={ko}
-                      />
-                    </PopoverContent>
-                  </Popover>
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="flex-1">
-                        <CalendarIcon className="w-4 h-4 mr-2" />
-                        {formEndDate
-                          ? format(formEndDate, "PP", { locale: ko })
-                          : "종료일"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formEndDate}
-                        onSelect={setFormEndDate}
-                        locale={ko}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsCreateDialogOpen(false);
-                  resetForm();
-                }}
-              >
-                취소
-              </Button>
-              <Button onClick={handleCreateStaff}>생성</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          {/* Filter Result Count */}
+          <div className="flex items-center text-sm text-muted-foreground ml-auto">
+            {filteredStaff.length}명 표시 중
+          </div>
+        </div>
       </div>
 
       {/* Staff List */}
@@ -583,7 +661,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {staff.map((member) => (
+              {filteredStaff.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell>{member.displayName}</TableCell>
                   <TableCell className="font-mono text-sm">
