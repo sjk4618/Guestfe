@@ -122,7 +122,13 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
     const rangeDays = differenceInDays(dateTo, dateFrom);
     const lastWeekEnd = subDays(dateFrom, 1);
     const lastWeekStart = subDays(lastWeekEnd, rangeDays);
-    const comparisonPeriod = `${format(lastWeekStart, 'MM/dd')}~${format(lastWeekEnd, 'MM/dd')}`;
+
+    // Format comparison period with day of week
+    // If single day, show only one date; otherwise show range
+    const isSingleDay = rangeDays === 0;
+    const comparisonPeriod = isSingleDay
+      ? `${format(lastWeekEnd, 'MM/dd')}(${getDayChar(lastWeekEnd)})`
+      : `${format(lastWeekStart, 'MM/dd')}(${getDayChar(lastWeekStart)})~${format(lastWeekEnd, 'MM/dd')}(${getDayChar(lastWeekEnd)})`;
 
     if (lastWeekEntries.length === 0) {
       return { diff: null, isPositive: true, hasData: false, comparisonPeriod };
