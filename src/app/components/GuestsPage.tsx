@@ -10,7 +10,7 @@ import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Switch } from './ui/switch';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, ChevronRight, Plus, Search, Edit, Trash2, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -335,7 +335,6 @@ export function GuestsPage({ user }: GuestsPageProps) {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="min-w-[200px]">
-                  <CalendarIcon className="w-4 h-4 mr-2" />
                   {format(selectedDate, 'PPP', { locale: ko })}({getDayChar(selectedDate)})
                 </Button>
               </PopoverTrigger>
@@ -362,22 +361,21 @@ export function GuestsPage({ user }: GuestsPageProps) {
           <div className="flex gap-2">
             <Button
               variant={filterType === 'ALL' ? 'default' : 'outline'}
-              size="sm"
+              size="default"
               onClick={() => setFilterType('ALL')}
             >
-              <Filter className="w-4 h-4 mr-2" />
               전체
             </Button>
             <Button
               variant={filterType === 'FREE' ? 'default' : 'outline'}
-              size="sm"
+              size="default"
               onClick={() => setFilterType('FREE')}
             >
               무료
             </Button>
             <Button
               variant={filterType === 'PAID' ? 'default' : 'outline'}
-              size="sm"
+              size="default"
               onClick={() => setFilterType('PAID')}
             >
               유료
@@ -399,7 +397,6 @@ export function GuestsPage({ user }: GuestsPageProps) {
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="w-4 h-4 mr-2" />
                 게스트 추가
               </Button>
             </DialogTrigger>

@@ -73,11 +73,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
         setCurrentPage(page);
         setMobileMenuOpen(false);
       }}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-        currentPage === page
-          ? 'bg-primary text-primary-foreground'
-          : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-      }`}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${currentPage === page
+        ? 'bg-primary text-primary-foreground'
+        : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+        }`}
     >
       <Icon className="w-5 h-5" />
       <span>{label}</span>
@@ -114,11 +113,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
           <nav className="flex flex-col gap-2 p-4">
             <button
               onClick={() => { setCurrentPage('guests'); setMobileMenuOpen(false); }}
-              className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${
-                currentPage === 'guests' 
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
-                  : 'hover:bg-accent/50 text-foreground'
-              }`}
+              className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${currentPage === 'guests'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                : 'hover:bg-accent/50 text-foreground'
+                }`}
             >
               <Users className="w-5 h-5" />
               <span className="font-medium">게스트</span>
@@ -126,11 +124,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
             {canAccessDoor && (
               <button
                 onClick={() => { setCurrentPage('door'); setMobileMenuOpen(false); }}
-                className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${
-                  currentPage === 'door' 
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
-                    : 'hover:bg-accent/50 text-foreground'
-                }`}
+                className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${currentPage === 'door'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                  : 'hover:bg-accent/50 text-foreground'
+                  }`}
               >
                 <DoorOpen className="w-5 h-5" />
                 <span className="font-medium">도어 체크인</span>
@@ -143,33 +140,30 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
                 </div>
                 <button
                   onClick={() => { setCurrentPage('dashboard'); setMobileMenuOpen(false); }}
-                  className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${
-                    currentPage === 'dashboard' 
-                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
-                      : 'hover:bg-accent/50 text-foreground'
-                  }`}
+                  className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${currentPage === 'dashboard'
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                    : 'hover:bg-accent/50 text-foreground'
+                    }`}
                 >
                   <LayoutDashboard className="w-5 h-5" />
                   <span className="font-medium">대시보드</span>
                 </button>
                 <button
                   onClick={() => { setCurrentPage('staff'); setMobileMenuOpen(false); }}
-                  className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${
-                    currentPage === 'staff' 
-                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
-                      : 'hover:bg-accent/50 text-foreground'
-                  }`}
+                  className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${currentPage === 'staff'
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                    : 'hover:bg-accent/50 text-foreground'
+                    }`}
                 >
                   <Users className="w-5 h-5" />
                   <span className="font-medium">스탭 관리</span>
                 </button>
                 <button
                   onClick={() => { setCurrentPage('settings'); setMobileMenuOpen(false); }}
-                  className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${
-                    currentPage === 'settings' 
-                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
-                      : 'hover:bg-accent/50 text-foreground'
-                  }`}
+                  className={`flex items-center gap-3 px-5 py-4 rounded-lg transition-all text-left ${currentPage === 'settings'
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                    : 'hover:bg-accent/50 text-foreground'
+                    }`}
                 >
                   <UserCog className="w-5 h-5" />
                   <span className="font-medium">설정</span>
@@ -198,11 +192,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
           <nav className="flex-1 p-4 space-y-1">
             <button
               onClick={() => setCurrentPage('guests')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
-                currentPage === 'guests' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${currentPage === 'guests'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
             >
               <Users className="w-4 h-4" />
               <span>게스트</span>
@@ -211,11 +204,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
             {canAccessDoor && (
               <button
                 onClick={() => setCurrentPage('door')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
-                  currentPage === 'door' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${currentPage === 'door'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
               >
                 <DoorOpen className="w-4 h-4" />
                 <span>도어 체크인</span>
@@ -229,11 +221,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
                 </div>
                 <button
                   onClick={() => setCurrentPage('dashboard')}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
-                    currentPage === 'dashboard' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${currentPage === 'dashboard'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    }`}
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   <span>대시보드</span>
@@ -241,11 +232,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
 
                 <button
                   onClick={() => setCurrentPage('staff')}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
-                    currentPage === 'staff' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${currentPage === 'staff'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    }`}
                 >
                   <Users className="w-4 h-4" />
                   <span>스탭 관리</span>
@@ -253,11 +243,10 @@ export function MainLayout({ user, onLogout }: MainLayoutProps) {
 
                 <button
                   onClick={() => setCurrentPage('settings')}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${
-                    currentPage === 'settings' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm ${currentPage === 'settings'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    }`}
                 >
                   <UserCog className="w-4 h-4" />
                   <span>설정</span>

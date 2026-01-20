@@ -18,9 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  Calendar as CalendarIcon,
   CheckCircle2,
-  Undo2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -298,7 +296,6 @@ export function DoorPage({ user }: DoorPageProps) {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="min-w-[200px]">
-                  <CalendarIcon className="w-4 h-4 mr-2" />
                   {format(selectedDate, "PPP", { locale: ko })}({getDayChar(selectedDate)})
                 </Button>
               </PopoverTrigger>
@@ -412,7 +409,6 @@ export function DoorPage({ user }: DoorPageProps) {
                         onClick={() => handleCheckIn(guest)}
                         className="min-w-[120px]"
                       >
-                        <CheckCircle2 className="w-5 h-5 mr-2" />
                         입장
                       </Button>
                     ) : (
@@ -427,7 +423,6 @@ export function DoorPage({ user }: DoorPageProps) {
                           onClick={() => handleCancelCheckIn(guest)}
                           className="min-w-[120px] text-destructive border-destructive hover:bg-destructive/10"
                         >
-                          <Undo2 className="w-5 h-5 mr-2" />
                           입장 취소
                         </Button>
                       </>

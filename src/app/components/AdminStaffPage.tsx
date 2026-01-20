@@ -33,7 +33,6 @@ import {
 } from "./ui/table";
 import { Switch } from "./ui/switch";
 import {
-  Plus,
   Edit,
   Trash2,
   Calendar as CalendarIcon,
@@ -460,7 +459,6 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="w-4 h-4 mr-2" />
                 계정 생성
               </Button>
             </DialogTrigger>
