@@ -84,6 +84,11 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
   const [formEndDate, setFormEndDate] = useState<Date>();
   const [formDailyGuestLimit, setFormDailyGuestLimit] = useState("");
 
+  // Loading states for buttons
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const resetForm = () => {
     setFormUsername("");
     setFormPassword("");
@@ -226,6 +231,8 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
       return;
     }
 
+    setIsCreating(true);
+
     try {
       const accessToken = await getAccessToken();
       const { data, error } = await supabase.functions.invoke("create-user", {
@@ -259,6 +266,8 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
     } catch (error: any) {
       console.error("Create staff error:", error);
       toast.error(error.message || "계정 생성에 실패했습니다.");
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -280,6 +289,8 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
       toast.error("하루 등록 가능 인원은 0 이상의 정수로 입력해주세요");
       return;
     }
+
+    setIsUpdating(true);
 
     try {
       const accessToken = await getAccessToken();
@@ -312,6 +323,8 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
     } catch (error) {
       console.error("Update error:", error);
       toast.error("수정에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -341,6 +354,8 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
       return;
     }
 
+    setDeletingId(staffId);
+
     try {
       const accessToken = await getAccessToken();
       const { data, error } = await supabase.functions.invoke("delete-user", {
@@ -362,6 +377,8 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
     } catch (error: any) {
       console.error("Delete error:", error);
       toast.error(error.message || "삭제에 실패했습니다.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -599,10 +616,13 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                     setIsCreateDialogOpen(false);
                     resetForm();
                   }}
+                  disabled={isCreating}
                 >
                   취소
                 </Button>
-                <Button onClick={handleCreateStaff}>생성</Button>
+                <Button onClick={handleCreateStaff} isLoading={isCreating} loadingText="생성 중...">
+                  생성
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -708,6 +728,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                         variant="outline"
                         size="sm"
                         onClick={() => openEditDialog(member)}
+                        disabled={deletingId === member.id}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -717,6 +738,7 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                         onClick={() =>
                           handleDeleteStaff(member.id, member.displayName)
                         }
+                        isLoading={deletingId === member.id}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -886,10 +908,13 @@ export function AdminStaffPage({ user }: AdminStaffPageProps) {
                 setEditingStaff(null);
                 resetForm();
               }}
+              disabled={isUpdating}
             >
               취소
             </Button>
-            <Button onClick={handleUpdateStaff}>수정</Button>
+            <Button onClick={handleUpdateStaff} isLoading={isUpdating} loadingText="수정 중...">
+              수정
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

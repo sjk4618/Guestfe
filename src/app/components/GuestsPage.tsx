@@ -54,6 +54,11 @@ export function GuestsPage({ user }: GuestsPageProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
 
+  // Loading states for buttons
+  const [isAdding, setIsAdding] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   // Form state
   const [formName, setFormName] = useState('');
   const [formPhone, setFormPhone] = useState('');
@@ -164,6 +169,8 @@ export function GuestsPage({ user }: GuestsPageProps) {
       return;
     }
 
+    setIsAdding(true);
+
     try {
       if (user.role !== 'ADMIN' && user.dailyGuestLimit !== null) {
         let currentCount = 0;
@@ -218,6 +225,8 @@ export function GuestsPage({ user }: GuestsPageProps) {
       }
       toast.error('게스트 등록에 실패했습니다');
       return;
+    } finally {
+      setIsAdding(false);
     }
 
     // Reset form
@@ -229,6 +238,8 @@ export function GuestsPage({ user }: GuestsPageProps) {
 
   const handleUpdateGuest = async () => {
     if (!editingGuest || !formName.trim()) return;
+
+    setIsUpdating(true);
 
     try {
       const guestType = formIsPaid ? 'PAID' : 'FREE';
@@ -261,10 +272,13 @@ export function GuestsPage({ user }: GuestsPageProps) {
     } catch (error) {
       console.error('Update guest error:', error);
       toast.error('수정에 실패했습니다');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDeleteGuest = async (guestId: string) => {
+    setDeletingId(guestId);
     try {
       const { error } = await supabase
         .from(GUESTS_TABLE)
@@ -279,6 +293,8 @@ export function GuestsPage({ user }: GuestsPageProps) {
     } catch (error) {
       console.error('Delete guest error:', error);
       toast.error('삭제에 실패했습니다');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -420,10 +436,12 @@ export function GuestsPage({ user }: GuestsPageProps) {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isAdding}>
                   취소
                 </Button>
-                <Button onClick={handleAddGuest}>등록</Button>
+                <Button onClick={handleAddGuest} isLoading={isAdding} loadingText="등록 중...">
+                  등록
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -470,6 +488,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
                         size="sm"
                         aria-label="게스트 수정"
                         onClick={() => openEditDialog(guest)}
+                        disabled={deletingId === guest.id}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -478,6 +497,7 @@ export function GuestsPage({ user }: GuestsPageProps) {
                         size="sm"
                         aria-label="게스트 삭제"
                         onClick={() => handleDeleteGuest(guest.id)}
+                        isLoading={deletingId === guest.id}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -530,10 +550,12 @@ export function GuestsPage({ user }: GuestsPageProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingGuest(null)}>
+            <Button variant="outline" onClick={() => setEditingGuest(null)} disabled={isUpdating}>
               취소
             </Button>
-            <Button onClick={handleUpdateGuest}>수정</Button>
+            <Button onClick={handleUpdateGuest} isLoading={isUpdating} loadingText="수정 중...">
+              수정
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

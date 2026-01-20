@@ -66,6 +66,10 @@ export function DoorPage({ user }: DoorPageProps) {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Loading states for buttons
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [isCancellingCheckIn, setIsCancellingCheckIn] = useState(false);
+
   const businessDate = format(selectedDate, "yyyy-MM-dd");
 
   const mapGuestFromDb = (row: any): Guest => ({
@@ -146,6 +150,8 @@ export function DoorPage({ user }: DoorPageProps) {
   const confirmCancelCheckIn = async () => {
     if (!cancelGuest) return;
 
+    setIsCancellingCheckIn(true);
+
     try {
       const { data, error } = await supabase
         .from(GUESTS_TABLE)
@@ -184,12 +190,15 @@ export function DoorPage({ user }: DoorPageProps) {
       console.error("Cancel check-in error:", error);
       toast.error("입장 취소에 실패했습니다");
     } finally {
+      setIsCancellingCheckIn(false);
       setCancelGuest(null);
     }
   };
 
   const confirmCheckIn = async () => {
     if (!confirmGuest) return;
+
+    setIsCheckingIn(true);
 
     try {
       const checkedInAt = new Date().toISOString();
@@ -230,6 +239,7 @@ export function DoorPage({ user }: DoorPageProps) {
       console.error("Check-in error:", error);
       toast.error("입장 처리에 실패했습니다");
     } finally {
+      setIsCheckingIn(false);
       setConfirmGuest(null);
       setSearchQuery("");
     }
@@ -463,10 +473,12 @@ export function DoorPage({ user }: DoorPageProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmGuest(null)}>
+            <Button variant="outline" onClick={() => setConfirmGuest(null)} disabled={isCheckingIn}>
               취소
             </Button>
-            <Button onClick={confirmCheckIn}>확인</Button>
+            <Button onClick={confirmCheckIn} isLoading={isCheckingIn} loadingText="입장 처리 중...">
+              확인
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -512,10 +524,10 @@ export function DoorPage({ user }: DoorPageProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelGuest(null)}>
+            <Button variant="outline" onClick={() => setCancelGuest(null)} disabled={isCancellingCheckIn}>
               아니오
             </Button>
-            <Button variant="destructive" onClick={confirmCancelCheckIn}>
+            <Button variant="destructive" onClick={confirmCancelCheckIn} isLoading={isCancellingCheckIn} loadingText="취소 중...">
               입장 취소
             </Button>
           </DialogFooter>

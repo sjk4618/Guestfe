@@ -2,22 +2,28 @@ import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Eye, EyeOff } from 'lucide-react';
 
 interface LoginPageProps {
-  onLogin: (username: string, password: string) => void;
+  onLogin: (username: string, password: string) => Promise<void> | void;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim() && password.length >= 8) {
-      onLogin(username, password);
+    if (username.trim() && password.length >= 8 && !isLoggingIn) {
+      setIsLoggingIn(true);
+      try {
+        await onLogin(username, password);
+      } finally {
+        setIsLoggingIn(false);
+      }
     }
   };
 
@@ -40,6 +46,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoFocus
+                disabled={isLoggingIn}
               />
             </div>
 
@@ -53,6 +60,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pr-10"
+                  disabled={isLoggingIn}
                 />
                 <Button
                   type="button"
@@ -60,6 +68,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   size="icon-sm"
                   className="absolute right-0 top-0"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoggingIn}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -70,6 +79,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               type="submit"
               className="w-full mt-6"
               disabled={!username.trim() || password.length < 8}
+              isLoading={isLoggingIn}
+              loadingText="로그인 중..."
             >
               로그인
             </Button>
