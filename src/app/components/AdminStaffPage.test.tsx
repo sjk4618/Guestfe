@@ -50,6 +50,7 @@ const buildUser = () => ({
 const createBuilder = (result: unknown) => {
   const builder: any = {
     eq: vi.fn(() => builder),
+    is: vi.fn(() => builder),
     order: vi.fn(() => builder),
     then: (resolve: (value: unknown) => void, reject: (reason?: any) => void) =>
       Promise.resolve(result).then(resolve, reject),
@@ -163,6 +164,7 @@ describe('AdminStaffPage', () => {
           role: 'STAFF',
           is_active: true,
           created_at: '2025-01-01',
+          deleted_at: null,
           user_access_scopes: [],
         },
       ],
@@ -192,5 +194,42 @@ describe('AdminStaffPage', () => {
       expect(update).toHaveBeenCalledWith({ is_active: false })
     })
     expect(updateBuilder.eq).toHaveBeenCalledWith('user_id', 'user-1')
+  })
+
+  it('소프트 딜리트된 스태프(deleted_at != null)는 목록에 표시되지 않는다', async () => {
+    // deleted_at이 null인 경우만 반환하도록 DB 쿼리를 필터링하는 것을 검증
+    // (실제로는 .is('deleted_at', null) 필터가 DB에서 처리하므로, 반환된 data에 삭제된 스태프가 없음)
+    const fetchResult = {
+      data: [
+        {
+          user_id: 'user-active',
+          username: 'active_staff',
+          display_name: '활성 스태프',
+          role: 'STAFF',
+          is_active: true,
+          created_at: '2025-01-01',
+          deleted_at: null,
+          user_access_scopes: [],
+        },
+        // deleted_at이 설정된 스태프는 DB 쿼리에서 이미 제외됨 (is('deleted_at', null) 필터)
+      ],
+      error: null,
+    }
+
+    const builder = createBuilder(fetchResult)
+    const select = vi.fn(() => builder)
+
+    supabaseMocks.mockFrom.mockImplementation(() => ({
+      select,
+    }))
+
+    render(<AdminStaffPage user={buildUser()} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('활성 스태프')).toBeInTheDocument()
+    })
+
+    // is('deleted_at', null) 필터가 적용됐는지 검증
+    expect(builder.is).toHaveBeenCalledWith('deleted_at', null)
   })
 })

@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { getDayChar } from '@/lib/date-utils';
+import { formatStaffName } from '@/lib/staff-utils';
 
 interface AdminDashboardProps {
   user: User;
@@ -74,7 +75,8 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
               created_by,
               created_by_profile:profiles!guest_entries_created_by_fkey (
                 display_name,
-                username
+                username,
+                deleted_at
               )
             `,
             )
@@ -193,10 +195,10 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
     const map = new Map<string, { name: string; registered: number; checkedIn: number }>();
     entries.forEach((entry) => {
       const name =
-        entry.created_by_profile?.display_name ||
-        entry.created_by_profile?.username ||
-        entry.created_by ||
-        '알 수 없음';
+        formatStaffName(
+          entry.created_by_profile,
+          entry.created_by || '알 수 없음',
+        ) || '알 수 없음';
       const current = map.get(name) || { name, registered: 0, checkedIn: 0 };
       current.registered += 1;
       if (entry.status === 'CHECKED_IN') {

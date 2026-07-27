@@ -71,6 +71,7 @@ describe('GuestsPage', () => {
         created_by_profile: {
           display_name: '스태프',
           username: 'staffer',
+          deleted_at: null,
         },
         business_date: businessDate,
       },
@@ -302,6 +303,42 @@ describe('GuestsPage', () => {
 
     await waitFor(() => {
       expect(insert).toHaveBeenCalled()
+    })
+  })
+
+  it('삭제된 스태프가 등록한 게스트는 "이름 (삭제된 스태프)"로 표시된다', async () => {
+    const businessDate = format(new Date(), 'yyyy-MM-dd')
+    const fetchResult = {
+      data: [
+        {
+          id: 'guest-1',
+          guest_name: '테스트 게스트',
+          phone: null,
+          guest_type: 'FREE',
+          status: 'REGISTERED',
+          created_by: 'deleted-user-1',
+          created_by_profile: {
+            display_name: '홍길동',
+            username: 'hong',
+            deleted_at: '2026-07-01T00:00:00Z', // 삭제된 스태프
+          },
+          business_date: businessDate,
+          checked_in_at: null,
+        },
+      ],
+      error: null,
+    }
+
+    const builder = createBuilder(fetchResult)
+    const select = vi.fn(() => builder)
+    supabaseMocks.mockFrom.mockImplementation(() => ({
+      select,
+    }))
+
+    render(<GuestsPage user={buildUser()} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/홍길동 \(삭제된 스태프\)/)).toBeInTheDocument()
     })
   })
 })

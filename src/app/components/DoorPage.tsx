@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { toast } from "sonner";
 import { getDayChar } from "@/lib/date-utils";
+import { formatStaffName } from "@/lib/staff-utils";
 import {
   DEFAULT_CUTOFF_HOUR,
   DEFAULT_CUTOFF_MINUTE,
@@ -78,18 +79,18 @@ export function DoorPage({ user }: DoorPageProps) {
     status: (row.status || "REGISTERED") as Guest["status"],
     creatorId: row.created_by,
     createdBy:
-      row.created_by_profile?.display_name ||
-      row.created_by_profile?.username ||
-      (row.created_by === user.id ? user.displayName : row.created_by) ||
-      "",
+      formatStaffName(
+        row.created_by_profile,
+        row.created_by === user.id ? user.displayName : (row.created_by || ''),
+      ),
     businessDate: row.business_date,
     checkedInAt: row.checked_in_at || undefined,
     checkedInById: row.checked_in_by || undefined,
     checkedInBy:
-      row.checked_in_by_profile?.display_name ||
-      row.checked_in_by_profile?.username ||
-      (row.checked_in_by === user.id ? user.displayName : row.checked_in_by) ||
-      undefined,
+      formatStaffName(
+        row.checked_in_by_profile,
+        row.checked_in_by === user.id ? user.displayName : (row.checked_in_by || undefined),
+      ) || undefined,
   });
 
   const fetchGuests = async () => {
@@ -102,11 +103,13 @@ export function DoorPage({ user }: DoorPageProps) {
           *,
           created_by_profile:profiles!guest_entries_created_by_fkey (
             display_name,
-            username
+            username,
+            deleted_at
           ),
           checked_in_by_profile:profiles!guest_entries_checked_in_by_fkey (
             display_name,
-            username
+            username,
+            deleted_at
           )
         `
         )
@@ -164,11 +167,13 @@ export function DoorPage({ user }: DoorPageProps) {
           *,
           created_by_profile:profiles!guest_entries_created_by_fkey (
             display_name,
-            username
+            username,
+            deleted_at
           ),
           checked_in_by_profile:profiles!guest_entries_checked_in_by_fkey (
             display_name,
-            username
+            username,
+            deleted_at
           )
         `)
         .single();
@@ -213,11 +218,13 @@ export function DoorPage({ user }: DoorPageProps) {
           *,
           created_by_profile:profiles!guest_entries_created_by_fkey (
             display_name,
-            username
+            username,
+            deleted_at
           ),
           checked_in_by_profile:profiles!guest_entries_checked_in_by_fkey (
             display_name,
-            username
+            username,
+            deleted_at
           )
         `)
         .single();
